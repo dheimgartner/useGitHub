@@ -1,7 +1,11 @@
 \documentclass[a4paper]{article}
 \usepackage{minimal}
 
-\usepackage[dvipsnames]{xcolor}
+%\VignetteIndexEntry{Let's collaborate (GitHub)!}
+%\VignetteDepends{foo}
+%\VignettePackage{useGitHub}
+
+\usepackage[svgnames]{xcolor}
 \usepackage[nochapters,eulermath=true]{classicthesis}
 \usepackage{natbib}
 
@@ -9,57 +13,267 @@
 \usepackage{orcidlink,thumbpdf}
 \usepackage{framed}
 
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{pmboxdraw}
+\usepackage{float}
+
 \bibliographystyle{minimal}
 
 \setlength{\marginparwidth}{4cm}
+\setlength{\marginparsep}{0.4cm}
+\setlength{\marginparpush}{0.75cm}
 \hypersetup{citecolor=teal}
+
+\usepackage{minted}
+\newminted{bash}{bgcolor=Beige, bgcolorpadding=0.5em}
+\newcommand{\bash}[1]{\mintinline{bash}|#1|}
+
+\newcommand{\use}[1]{\code{#1}}
 
 \SweaveOpts{engine=R, eps=FALSE, keep.source = TRUE}
 <<preliminaries, echo=FALSE, results=hide>>=
-options(prompt = "R> ", continue = "+  ", width = 70, useFancyQuotes = FALSE)
-library("MASS")
+options(prompt = " ",  continue = "   ", width = 70, useFancyQuotes = FALSE)
+library("useBash")
 @
 
 \author{Daniel Heimgartner}
 
-\title{A Short Demo Article}
+\title{Let's collaborate (GitHub)!}
 
 \begin{document}
 \maketitle
 
-\section{To cite or not to cite} \label{sec:cite}
+Code to be executed in a terminal running bash looks like this
+\begin{bashcode}
+echo "Let's collaborate!"
+\end{bashcode}
 
-A nice book: \citet{Cameron+Trivedi:2013}
+\section{Why?}
 
-\section{\R~code} \label{sec:code}
-\leftmarginpar{Wow this is some real code!}
-<<>>=
-f <- function() {
-  cat("Hello, world!\n")
-}
-f()
-@
+\leftmarginpar{What is \proglang{GitHub}}
+From Wikipedia (yes, it's ok to cite from there -- at least, once you have defended):
+``GitHub [...] is a proprietary developer platform that allows developers to create, store, manage, and share their code. It uses Git to provide distributed version control and GitHub itself provides access control, bug tracking, software feature requests, task management, continuous integration, and wikis for every project. Headquartered in California, GitHub, Inc. has been a subsidiary of Microsoft since 2018.''
+\begin{itemize}
+\item ``It uses Git'': The key underlying technology is \proglang{git} and we use \proglang{git} to ``interact'' with \proglang{GitHub}.
+\item \proglang{GitHub} is a webapp that has some very nice features (as mentioned above).
+\item For us in particular important are the features that allow us to inspect code and changes thereof, and discuss code (e.g., using the issue tracker or a pull request).
+\end{itemize}
+%
+The main takeaway: \proglang{GitHub} hosts our source code and allows us to easily inspect, update and share code.
 
-\section{Talking \code{code}}
-\leftmarginpar{\code{usethis::create\_package()}}
-\code{x <- 1}
+\vspace{2em}
 
-\section{Mathematik, Mathematik --- immer diese Mathematik} \label{sec:maths}
+\leftmarginpar{Are there alternatives?}
+\begin{itemize}
+\item As with any proprietary software/product, one wonders: Where does my data live? Who has access? What if they suddenly stop the service (or make you pay for an initially ``free'' service)? Etc.
+\item The key feature (for us) is, that \proglang{GitHub} hosts our remote branch (more on this later) which allows us to sync and share our work. However, if we only collaborate internally, you could use any shared network location and add the address as remote \bash{git remote add origin <url>}.
+\item Since the above raised questions matter, ETH Zurich hosts its own \proglang{GitLab} service. \proglang{GitLab} is very similar to \proglang{GitHub} and you will be able to easily transfer what you learn here.
+\item \proglang{Bitbucket} is another alternative... There are probably many more...
+\end{itemize}
+\marginpar{But \proglang{GitHub} is by far the most dominant player -- quite a smart move from Microsoft to have acquired it: They now massively benefit from having billions and billions of lines of source code available which they can use to train their AI tools like \proglang{Copilot}...}
 
-\begin{equation}
-a^2 + b^2 = c^2
-\end{equation}
+\vspace{2em}
+
+\leftmarginpar{What will I learn?}
+\begin{itemize}
+\item Understand difference between local branch and remote branch (i.e., working locally and then publishing the changes remotely).
+\item Initialize a new (\R) project and make it available to others on \proglang{GitHub}.
+\item Make a local copy of a \proglang{GitHub} project (clone a repository, i.e., easily share code; download files).
+\item Work on a \proglang{GitHub} project yourself (pull and push).
+\item Work on a \proglang{GitHub} project together (work on a new branch and then integrate the branch - i.e., make and discuss a pull request).
+\item (Understand the need of forks - i.e., if you want to contribute to a project you don't have "write" permission).
+\end{itemize}
+
+\section{Setup}
+\proglang{ssh} is a (cryptographic) network protocol -- i.e., a ``communication tool'' to securely exchange information via an (unsecured) network. The alternative is to use \proglang{HTTPS} (just another transfer protocol) -- however, it is recommended to use \proglang{ssh}.
+\marginpar{The URL depends on which protocol you use (more on this later)... From \bash{git clone --help} we learn that \proglang{git} supports further protocols than the ones mentioned.}
+
+The first thing you should do (this requires you to understand how to use a terminal -- luckily we do!)
+\begin{itemize}
+\item Check for existing SSH key \url{https://docs.github.com/en/authentication/connecting-to-github-with-ssh/checking-for-existing-ssh-keys}.
+\item Generate a new SSH key \url{https://docs.github.com/en/authentication/connecting-to-github-with-ssh/generating-a-new-ssh-key-and-adding-it-to-the-ssh-agent}.
+\item Add a new SSH key \url{https://docs.github.com/en/authentication/connecting-to-github-with-ssh/adding-a-new-ssh-key-to-your-github-account}.
+\item Test your SSH connection \url{https://docs.github.com/en/authentication/connecting-to-github-with-ssh/testing-your-ssh-connection}.
+\end{itemize}
+And then always use the \proglang{ssh} protocol (i.e., the appropriate URL) from now on.
+\marginpar{\proglang{ssh} can also be used to log into a server and exchange information (e.g., files) with it...}
+
+\section{Let's collaborate}
+
+There are two ways you can initialize a \proglang{GitHub} project: 1. Intialize a new repository/project \emph{remotely} on \proglang{GitHub} and then \emph{clone} it to your \emph{local} computer or 2. \emph{Push} a local \proglang{git}-repository to \proglang{GitHub}. I think the latter is more natural, as I usually first work locally and then at some point decide to push it to \proglang{GitHub} (either because I want to make it publicly available or I want to collaborate -- possibly with myself from another computer). So I will introduce 2. (but you'll easily figure 1. out if you have to).
+
+\vspace{2em}
+
+\leftmarginpar{Push a local \proglang{git}-repository to \proglang{GitHub}}
+\marginpar{You might enjoy \proglang{radian} -- a 21 century\R console \url{https://github.com/randy3k/radian}.}
+Let's first create a new \R-package/project and make it a \proglang{git}-repository (nothing new here, we already know these steps...)
+\begin{itemize}
+\item Start the \R~console from within a terminal session (first navigate to your desired location... Hint: \bash{cd})
+\item \code{usethis::create\_package("tuesdays", rstudio = TRUE)}
+\item \bash{cd} into the directory: \bash{cd tuesdays}
+\item \fct{usethis::use\_git} (more or less the same as \bash{git init . && git add . && git commit -m "init"})
+\end{itemize}
+%
+Now we have to create a new empty ``tuesdays'' repository on \proglang{GitHub} and populate it with the files and stuff we just scaffolded.
+\begin{itemize}
+\item Navigate to \url{https://github.com/new} (or find and click the green ``New'' button -- don't worry, it's ok to click!)
+\item Populate the repository name and click ``Create repository''
+\end{itemize}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\textwidth]{figures/new-repository}
+\end{figure}
+
+This then brings you to the following page
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\textwidth]{figures/push-repository}
+\end{figure}
+
+\begin{itemize}
+\item As outlined above, it suggests us the two options and we demonstrate the latter here (i.e., push an existing repository from the command line).
+\item Importantly, click on ``SSH'' in \emph{Quick setup} which will adjust the URLs in the commands that follow to use the \proglang{ssh} protocol.
+\item Copy and paste the code into your terminal session (obviously, the current directory needs to be the ``tuesdays'' repository!)
+\end{itemize}
+
+\begin{bashcode}
+## add the remote branch
+git remote add origin git@github.com:dheimgartner/tuesdays.git
+## rename (move) the branch from master to main
+git branch -M main
+## push the local main branch to the remote origin => origin/main
+git push -u origin main
+\end{bashcode}
+
+\begin{itemize}
+\item Refresh the page to see the magic -- your remote repository (living on some Microsoft server somewhere) now is an exact copy of your local \proglang{git}-repository (unless you have excluded files via the \code{.gitignore} file).
+\end{itemize}
+
+Now imagine, that your beloved cat (if you are a cat person) or dog (if you are a dog person) destroyed your computer... The cat probably pushed it over an edge, while the dog ate it. No worries -- just \emph{clone} the repository
+
+\begin{bashcode}
+## navigate one level up
+cd ..
+## simulate the cat or dog
+rm -rf tuesdays
+## clone again
+git clone git@github.com:dheimgartner/tuesdays.git
+## cd into the freshly cloned tuesdays repo
+cd tuesdays
+## forgive your cat or dog
+\end{bashcode}
+
+You find the URL by clicking on ``Code'' when having navigated to a \proglang{GitHub} repository (e.g., \url{https://github.com/dheimgartner/tuesdays}). Again, don't forget to click on SSH.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\textwidth]{figures/clone}
+\end{figure}
+
+\vspace{2em}
+
+\leftmarginpar{\bash{git pull}}
+I didn't find a better place to tell you about pulling remote changes. But if you expect that the remote branch has updated, you can integrate the changes locally by \emph{pulling} them (down from remote) \bash{git pull}.
+
+\vspace{2em}
+
+\leftmarginpar{If you are the sole developer}
+Now, the only thing that changes (compared to working locally only), is, that you have to \emph{push} the local changes to remote from time to time (when exactly is up to you). So the workflow looks very similar to what we already know
+\marginpar{This is also fine if you are few developers with write permission and you coordinate your work...}
+\begin{bashcode}
+## work on the project locally
+## add the changes
+git add .
+## commit
+git commit -m "blob"
+## push it to remote (not necessarily after every commit)
+git push
+\end{bashcode}
+
+\vspace{2em}
+
+\leftmarginpar{If multiple people contribute to the same project}
+Here is what we will do then: Create a local development branch and work on this branch. Push the development branch and open a pull request. Inspect and discuss (if necessary) the changes and merge the pull request. Delete the remote development branch. Pull the updated main branch again (to update the local copy). Let's do it!
+\begin{bashcode}
+## create local development branch
+git branch dev
+## switch the branch from main to dev
+git checkout dev
+## work on it and add commits
+git add . && git commit -m "blob"
+## try to push it
+git push
+\end{bashcode}
+%
+This will complain and tell you what to do
+\begin{bashcode}
+fatal: The current branch dev has no upstream branch.
+To push the current branch and set the remote as upstream, use
+
+    git push --set-upstream origin dev
+\end{bashcode}
+%
+So let's do it (it's always a good idea to reason why something did not work and try to understand what the suggestion does)
+\begin{bashcode}
+git push --set-upstream origin dev
+
+Enumerating objects: 4, done.
+Counting objects: 100\% (4/4), done.
+Delta compression using up to 16 threads
+Compressing objects: 100\% (2/2), done.
+Writing objects: 100\% (3/3), 271 bytes | 271.00 KiB/s, done.
+Total 3 (delta 1), reused 0 (delta 0), pack-reused 0
+remote: Resolving deltas: 100\% (1/1), completed with 1 local object.
+remote:
+remote: Create a pull request for 'dev' on GitHub by visiting:
+remote:      https://github.com/dheimgartner/tuesdays/pull/new/dev
+remote:
+To github.com:dheimgartner/tuesdays.git
+ * [new branch]      dev -> dev
+Branch 'dev' set up to track remote branch 'dev' from 'origin'.
+\end{bashcode}
+%
+Again, read the command's output -- it already suggests to ``Create a pull request for 'dev' on GitHub by visiting: \url{https://github.com/dheimgartner/tuesdays/pull/new/dev}''. So again, let's do it!
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\textwidth]{figures/pull-request}
+\end{figure}
+
+Discussing and closing a pull request should be self-explanatory: Just navigate to the ``Pull requests'' tab (e.g., something like \url{https://github.com/dheimgartner/tuesdays/pull/1}) and use the webapp/GUI. Merge the pull request -- It's always safe to click on green buttons, right?
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\textwidth]{figures/merge-pull-request}
+\end{figure}
+
+\section{Now it's your turn}
+Again, this by far does not cover all the edge cases and it is essential that you just practice (and encounter such edge cases/problems yourself and resolve them). However, for this exercise, all the steps are outlined above!
+\begin{enumerate}
+\item Create a new \R-package.
+\item Push it to \proglang{GitHub}.
+\item Add one or multiple collaborators (you'll figure it out).
+\item Create a pull request (with hopefully a very nice \R-function or new dataset: see also \url{https://github.com/lets-use-xxx/Rpackage/blob/main/vignette.pdf}).
+\end{enumerate}
+
+\vspace{2em}
+
+\leftmarginpar{Advanced}
+Try to simulate a merge conflict and resolve it... Simulating a merge conflict is actually a very good exercise -- it requires you to understand why they emerge in the first place!
+
+\section{Final remarks}
+This concludes the \emph{let's use xxx} series -- and they lived happily ever after, with complete mental peace, always knowing that their work is version controlled, securely stored on some remote \proglang{GitHub} server.
+
+\vspace{2em}
+
+\leftmarginpar{Resources}
+\begin{itemize}
+\item Foo
+\end{itemize}
 
 \bibliography{refs}
-
-\newpage
-
-\begin{appendix}
-
-\section{More technical details} \label{app:technical}
-
-The appendix...
-
-\end{appendix}
 
 \end{document}

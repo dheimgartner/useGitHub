@@ -1,2 +1,4 @@
 ^useGitHub\.Rproj$
 ^\.Rproj\.user$
+^doc$
+^Meta$
